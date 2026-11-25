@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TRIMIQ LIVE</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">TL</div><div><strong>TRIMIQ</strong><span>LIVE</span></div></div>
+      <nav>
+        <a href="/" data-page="dashboard"><span>▦</span> Dashboard</a>
+        <a href="/video-library" data-page="video_library"><span>▶</span> Video Library</a>
+        <a href="/playlists" data-page="playlists"><span>≡</span> Playlist Manager</a>
+        <a href="/streaming" data-page="streaming"><span>◉</span> Live Streaming</a>
+        <a href="/destinations" data-page="destinations"><span>⌁</span> RTMP Destinations</a>
+        <a href="/history" data-page="history"><span>↶</span> Stream History</a>
+        <a href="/settings" data-page="settings"><span>⚙</span> Settings</a>
+        <a href="/system" data-page="system"><span>▤</span> System Status</a>
+      </nav>
+      <form method="post" action="/logout" class="logout-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit">Logout</button>
+      </form>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="menu-button" id="menuButton" aria-label="Open menu">☰</button>
+        <div>
+          <h1 id="pageTitle">Dashboard</h1>
+          <span id="modeBadge" class="badge">Loading</span>
+        </div>
+        <div class="live-indicator"><i></i><span id="headerStatus">Checking</span></div>
+      </header>
+      <section id="content" data-page="{{ page }}"></section>
+    </main>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
