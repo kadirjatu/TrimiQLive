@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TRIMIQ LIVE - Initial Setup</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="login-body">
+  <main class="login-card">
+    <div class="brand-mark">TL</div>
+    <h1>TRIMIQ LIVE</h1>
+    <p>Create the first administrator account</p>
+    {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ url_for('signup') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>Username<input name="username" autocomplete="username" minlength="3" maxlength="32" required></label>
+      <label>Password<input name="password" type="password" autocomplete="new-password" minlength="12" required></label>
+      <label>Confirm password<input name="confirm_password" type="password" autocomplete="new-password" minlength="12" required></label>
+      <button class="primary" type="submit">Create administrator</button>
+    </form>
+  </main>
+</body>
+</html>

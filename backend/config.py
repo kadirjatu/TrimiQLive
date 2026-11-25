@@ -13,8 +13,6 @@ def env_path(name: str, default: str) -> Path:
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "development-only-change-me")
     STREAMING_MODE = os.getenv("STREAMING_MODE", "DEMO").upper()
-    ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-this-password")
     DATABASE_PATH = env_path("DATABASE_PATH", "data/trimiq.sqlite3")
     UPLOAD_FOLDER = env_path("UPLOAD_FOLDER", "uploads")
     LOG_FOLDER = env_path("LOG_FOLDER", "logs")

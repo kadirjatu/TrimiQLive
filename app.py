@@ -1,4 +1,6 @@
 import os
+import re
+import sqlite3
 import shutil
 import threading
 import uuid
@@ -52,15 +54,6 @@ def load_or_create_encryption_key():
 
 STREAM_KEY_SECRET = load_or_create_encryption_key()
 
-with db.connection() as conn:
-    user = conn.execute("SELECT id FROM users WHERE username=?", (app.config["ADMIN_USERNAME"],)).fetchone()
-    if not user:
-        conn.execute(
-            "INSERT INTO users(username, password_hash) VALUES (?, ?)",
-            (app.config["ADMIN_USERNAME"], generate_password_hash(app.config["ADMIN_PASSWORD"]))
-        )
-        conn.commit()
-
 engine = StreamingEngine(
     db,
     app.config["UPLOAD_FOLDER"],
@@ -86,11 +79,16 @@ def csrf_token():
 @app.before_request
 def protect_mutating_requests():
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        if request.endpoint not in ("login",):
+        if request.endpoint not in ("login", "signup"):
             if not session.get("admin"):
                 abort(401)
-            if request.headers.get("X-CSRF-Token") != session.get("csrf_token"):
-                abort(403)
+        submitted_token = (
+            request.headers.get("X-CSRF-Token")
+            or request.form.get("csrf_token")
+        )
+        expected_token = session.get("csrf_token")
+        if not expected_token or submitted_token != expected_token:
+            abort(403)
 
 
 @app.context_processor
@@ -111,6 +109,11 @@ def login_required(view):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    with db.connection() as conn:
+        has_account = conn.execute("SELECT 1 FROM users LIMIT 1").fetchone() is not None
+    if not has_account:
+        return redirect(url_for("signup"))
+
     if request.method == "POST":
         username = request.form.get("username", "")
         password = request.form.get("password", "")
@@ -123,6 +126,51 @@ def login():
             return redirect(url_for("dashboard"))
         return render_template("login.html", error="Invalid username or password"), 401
     return render_template("login.html")
+
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "GET":
+        with db.connection() as conn:
+            has_account = conn.execute("SELECT 1 FROM users LIMIT 1").fetchone() is not None
+        if has_account:
+            return redirect(url_for("login"))
+        return render_template("signup.html")
+
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
+    confirm_password = request.form.get("confirm_password", "")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{3,32}", username):
+        return render_template(
+            "signup.html",
+            error="Username must be 3-32 characters: letters, numbers, dots, dashes or underscores.",
+        ), 400
+    if len(password) < 12:
+        return render_template("signup.html", error="Password must be at least 12 characters."), 400
+    if password != confirm_password:
+        return render_template("signup.html", error="Passwords do not match."), 400
+
+    try:
+        with db.connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            has_account = conn.execute("SELECT 1 FROM users LIMIT 1").fetchone() is not None
+            if has_account:
+                conn.rollback()
+                return render_template(
+                    "signup.html", error="Initial account setup is already complete."
+                ), 409
+            conn.execute(
+                "INSERT INTO users(username, password_hash) VALUES (?, ?)",
+                (username, generate_password_hash(password)),
+            )
+            conn.commit()
+    except sqlite3.IntegrityError:
+        return render_template("signup.html", error="Unable to create the account."), 409
+
+    session.clear()
+    session["admin"] = username
+    csrf_token()
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/logout", methods=["POST"])

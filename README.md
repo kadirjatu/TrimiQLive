@@ -24,9 +24,10 @@ chmod +x start.sh
 
 The Flask server serves the frontend and API together, so `./start.sh` starts
 both in one command. It loads `.env` when present and initializes the database
-automatically. Open `http://localhost:8080`. Change `ADMIN_PASSWORD` in `.env`
-before starting. The default development credentials are
-`admin` / `change-this-password`.
+automatically. Open `http://localhost:8080` and create the first administrator
+account at the signup page. Signup closes automatically after the first account
+is created; later visits go to login. Use a strong password of at least 12
+characters.
 
 FFmpeg and FFprobe are optional for dashboard-only/DEMO use. For production,
 install them and set `STREAMING_MODE=PRODUCTION`.
@@ -56,10 +57,10 @@ docker run --rm -p 8080:8080 \
 
 1. Import this repository.
 2. Set `STREAMING_MODE=DEMO`.
-3. Set secure `SECRET_KEY`, `KEY_ENCRYPTION_KEY`, `ADMIN_USERNAME` and
-   `ADMIN_PASSWORD` variables.
+3. Set secure `SECRET_KEY` and `KEY_ENCRYPTION_KEY` variables.
 4. Add persistent volumes for `/app/data` and `/app/uploads` if available.
 5. Deploy with the Dockerfile.
+6. Open the app and create the initial administrator account before sharing the URL.
 
 No real RTMP broadcast should be started on Railway Free.
 
