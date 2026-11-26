@@ -61,16 +61,29 @@ class StreamingEngine:
             if not item["codec"] or not item["width"] or not item["height"]:
                 raise RuntimeError("Corrupted or unsupported playlist media")
 
-        mode = {"portrait_1080": (1080, 1920), "portrait_720": (720, 1280),
-                "landscape_1080": (1920, 1080), "landscape_720": (1280, 720)}
-        target = mode.get(orientation)
-        if not target:
+        valid_orientations = {
+            "portrait_1080", "portrait_720",
+            "landscape_1080", "landscape_720"
+        }
+        if orientation not in valid_orientations:
             raise RuntimeError("Invalid video orientation")
-        incompatible = [i["stored_name"] for i in items if (i["width"], i["height"]) != target]
-        if incompatible:
+
+        first_width = items[0]["width"]
+        first_height = items[0]["height"]
+        if any(
+            (i["width"], i["height"]) != (first_width, first_height)
+            for i in items
+        ):
             raise RuntimeError(
-                "STREAM_COPY_ORIENTATION_MISMATCH: COPY mode cannot change resolution. "
-                "Select an orientation matching every source video."
+                "STREAM_COPY_RESOLUTION_MISMATCH: COPY mode requires "
+                "all playlist videos to have the same resolution."
+            )
+
+        is_portrait = first_height > first_width
+        if (orientation.startswith("portrait_")) != is_portrait:
+            raise RuntimeError(
+                "STREAM_COPY_ORIENTATION_MISMATCH: Selected orientation "
+                "does not match the source video."
             )
 
         valid_schemes = ("rtmp://", "rtmps://")

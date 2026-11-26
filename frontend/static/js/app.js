@@ -79,8 +79,8 @@ async function renderDashboard() {
     ${stat("Playlists",data.playlist_count,"Saved playlists")}
     ${stat("Stream Status",data.status === "DEMO_RUNNING" ? "DEMO RUNNING" : data.status,"Actual process state")}
     ${stat("Stream Uptime",formatUptime(data.uptime || 0),"Since start")}
-    ${stat("CPU Usage",`${system.cpu_percent.toFixed(1)}%`,"Server load")}
-    ${stat("RAM Usage",`${system.ram_percent.toFixed(1)}%`,"Available memory")}
+    ${stat("CPU Usage",(system.cpu_percent == null ? "N/A" : `${system.cpu_percent.toFixed(1)}%`),"Server load")}
+    ${stat("RAM Usage",(system.ram_percent == null ? "N/A" : `${system.ram_percent.toFixed(1)}%`),"Available memory")}
     ${stat("Free Storage",formatBytes(system.disk_free_mb * 1024 * 1024),"Upload volume")}
     ${stat("Network",system.network_status,"Local availability")}
   `;
@@ -168,7 +168,7 @@ async function renderDestinations() {
 async function renderStreaming() {
   document.getElementById("pageTitle").textContent="Live Streaming";
   content.innerHTML=`<div class="grid stats" id="streamStats"></div><div class="grid" style="grid-template-columns:2fr 1fr;margin-top:16px">
-    <div class="card"><h3>Streaming Configuration</h3><div class="form-grid"><label>Playlist<select id="streamPlaylist"></select></label><label>Destination<select id="streamDestination"></select></label><label>Orientation<select id="streamOrientation"><option value="landscape_1080">Landscape 1920×1080</option><option value="landscape_720">Landscape 1280×720</option><option value="portrait_1080">Portrait 1080×1920</option><option value="portrait_720">Portrait 720×1280</option></select></label><label>Playback mode<div id="streamMode" style="padding:10px 0;color:var(--muted)">Repeat entire playlist</div></label></div>
+    <div class="card"><h3>Streaming Configuration</h3><div class="form-grid"><label>Playlist<select id="streamPlaylist"></select></label><label>Destination<select id="streamDestination"></select></label><label>Orientation<select id="streamOrientation"><option value="landscape_1080">Landscape (Original resolution)</option><option value="landscape_720">Landscape (Original resolution)</option><option value="portrait_1080">Portrait (Original resolution)</option><option value="portrait_720">Portrait (Original resolution)</option></select></label><label>Playback mode<div id="streamMode" style="padding:10px 0;color:var(--muted)">Repeat entire playlist</div></label></div>
       <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="primary" id="startStream">Start Live</button><button class="danger" id="stopStream">Stop Live</button><button class="secondary" id="restartStream">Restart</button><button class="secondary" id="refreshStatus">Refresh Status</button></div></div>
     <div class="card"><h3>Process Status</h3><div id="processStatus"></div></div></div>`;
   async function loadOptions(){
@@ -216,7 +216,7 @@ async function renderSettings(){
   const grid=document.getElementById("settingsGrid");
   grid.innerHTML=Object.entries(fields).map(([key,[label,type]])=>{
     let input=`<input id="setting_${key}" type="${type}" value="${escapeHtml(settings[key]||"")}">`;
-    if(type==="select"&&key==="default_orientation")input=`<select id="setting_${key}"><option value="landscape_1080" ${settings[key]==="landscape_1080"?"selected":""}>Landscape 1920×1080</option><option value="landscape_720" ${settings[key]==="landscape_720"?"selected":""}>Landscape 1280×720</option><option value="portrait_1080" ${settings[key]==="portrait_1080"?"selected":""}>Portrait 1080×1920</option><option value="portrait_720" ${settings[key]==="portrait_720"?"selected":""}>Portrait 720×1280</option></select>`;
+    if(type==="select"&&key==="default_orientation")input=`<select id="setting_${key}"><option value="landscape_1080" ${settings[key]==="landscape_1080"?"selected":""}>Landscape (Original resolution)</option><option value="landscape_720" ${settings[key]==="landscape_720"?"selected":""}>Landscape (Original resolution)</option><option value="portrait_1080" ${settings[key]==="portrait_1080"?"selected":""}>Portrait (Original resolution)</option><option value="portrait_720" ${settings[key]==="portrait_720"?"selected":""}>Portrait (Original resolution)</option></select>`;
     if(type==="select"&&key==="default_playback_mode")input=`<select id="setting_${key}"><option value="repeat_playlist" ${settings[key]==="repeat_playlist"?"selected":""}>Repeat entire playlist</option><option value="repeat_video">Repeat current video</option><option value="play_once">Play once</option></select>`;
     if(type==="select"&&key==="automatic_reconnect")input=`<select id="setting_${key}"><option value="true" ${settings[key]==="true"?"selected":""}>Enabled</option><option value="false" ${settings[key]==="false"?"selected":""}>Disabled</option></select>`;
     return `<label>${label}${input}</label>`;
@@ -228,7 +228,7 @@ async function renderSystem(){
   document.getElementById("pageTitle").textContent="System Status";
   content.innerHTML=`<div class="grid stats" id="systemStats"></div><div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px"><div class="card"><h3>Stream Engine</h3><div id="engineInfo"></div></div><div class="card"><h3>Recent Logs</h3><div id="recentLogs" style="max-height:300px;overflow:auto"></div></div></div>`;
   const [system,logs]=await Promise.all([api("/api/system"),api("/api/logs")]);
-  document.getElementById("systemStats").innerHTML=stat("CPU",`${system.cpu_percent.toFixed(1)}%`,`Server usage`)+stat("RAM",`${system.ram_percent.toFixed(1)}%`,`${system.ram_available_mb} MB available`)+stat("Free Storage",formatBytes(system.disk_free_mb*1024*1024),"Available")+stat("Network",system.network_status,"Local status");
+  document.getElementById("systemStats").innerHTML=stat("CPU",(system.cpu_percent == null ? "N/A" : `${system.cpu_percent.toFixed(1)}%`),`Server usage`)+stat("RAM",(system.ram_percent == null ? "N/A" : `${system.ram_percent.toFixed(1)}%`),(system.ram_available_mb == null ? "Unavailable" : `${system.ram_available_mb} MB available`))+stat("Free Storage",formatBytes(system.disk_free_mb*1024*1024),"Available")+stat("Network",system.network_status,"Local status");
   document.getElementById("engineInfo").innerHTML=`${info("Mode",system.stream.mode)}${info("Application","Running")}${info("FFmpeg Process",system.stream.process_running?"Running":"Stopped")}<div style="margin-top:12px">${escapeHtml(system.stream.status)}</div>`;
   document.getElementById("recentLogs").innerHTML=logs.map(l=>`<div style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px"><strong>${escapeHtml(l.level)}</strong> · ${escapeHtml(l.created_at)}<br><span style="color:var(--muted)">${escapeHtml(l.message)}</span></div>`).join("")||'<div class="stat-label">No log entries</div>';
 }

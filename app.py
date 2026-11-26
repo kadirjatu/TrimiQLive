@@ -231,10 +231,27 @@ def system_page():
 @login_required
 def api_system():
     disk = shutil.disk_usage(app.config["UPLOAD_FOLDER"])
+
+    cpu_percent = None
+    ram_percent = None
+    ram_available_mb = None
+
+    try:
+        cpu_percent = psutil.cpu_percent(interval=None)
+    except (PermissionError, OSError):
+        pass
+
+    try:
+        memory = psutil.virtual_memory()
+        ram_percent = memory.percent
+        ram_available_mb = round(memory.available / 1024 / 1024)
+    except (PermissionError, OSError):
+        pass
+
     return jsonify({
-        "cpu_percent": psutil.cpu_percent(interval=None),
-        "ram_percent": psutil.virtual_memory().percent,
-        "ram_available_mb": round(psutil.virtual_memory().available / 1024 / 1024),
+        "cpu_percent": cpu_percent,
+        "ram_percent": ram_percent,
+        "ram_available_mb": ram_available_mb,
         "disk_free_mb": round(disk.free / 1024 / 1024),
         "network_status": "Available",
         "stream": engine.snapshot(),
